@@ -1,0 +1,13 @@
+
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1541 178' width='1541' height='178'>
+  <g fill='#0A0A0A'>
+    <!-- Lemniscate / Infinity symbol -->
+    <path d='M105 45 C 65 45, 32 65, 32 89 C 32 113, 65 133, 105 133 C 142 133, 172 112, 198 89 C 172 66, 142 45, 105 45 Z M 105 65 C 128 65, 148 76, 168 89 C 148 102, 128 113, 105 113 C 78 113, 56 102, 56 89 C 56 76, 78 65, 105 65 Z' />
+    <path d='M291 45 C 254 45, 224 66, 198 89 C 224 112, 254 133, 291 133 C 331 133, 364 113, 364 89 C 364 65, 331 45, 291 45 Z M 291 65 C 318 65, 340 76, 340 89 C 340 102, 318 113, 291 113 C 268 113, 248 102, 228 89 C 248 76, 268 65, 291 65 Z' />
+    <!-- Accent emerald pearl dot -->
+    <circle cx='375' cy='52' r='12' fill='#06D6A0' />
+    
+    <!-- J38 CORPORATION text -->
+    <text x='430' y='118' font-family='Satoshi, -apple-system, sans-serif' font-size='84' font-weight='900' letter-spacing='0.08em' fill='#0A0A0A'>J38 CORPORATION</text>
+  </g>
+</svg>

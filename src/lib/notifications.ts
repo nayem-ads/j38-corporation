@@ -1,42 +1,141 @@
+import nodemailer from 'nodemailer';
 import { GrowthAudit } from './db';
 
-const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'raselrehman222@gmail.com';
+const RECIPIENT_EMAIL = process.env.NOTIFICATION_EMAIL || 'raselrehman222@gmail.com';
 
 export async function sendAuditNotification(audit: GrowthAudit): Promise<{ success: boolean; error?: string }> {
-  console.log(`[Notification] Dispatching growth audit alert for ${audit.name} (${audit.company || 'N/A'}) to ${ADMIN_NOTIFICATION_EMAIL}`);
+  console.log(`[Notification] Initiating lead notification for ${audit.name} (${audit.email}) -> ${RECIPIENT_EMAIL}`);
 
-  // 1. Dispatch Webhook if configured (Discord, Slack, Make, Zapier)
-  const webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
-  if (webhookUrl) {
+  const subject = `New Growth Audit Request: ${audit.name} - ${audit.website || audit.company || 'Website'} [${audit.service}]`;
+  
+  const textContent = `
+NEW GROWTH AUDIT REQUEST RECEIVED
+---------------------------------
+Name: ${audit.name}
+Work Email: ${audit.email}
+Website: ${audit.website || 'N/A'}
+Phone / WhatsApp: ${audit.phone || 'N/A'}
+Company: ${audit.company || 'N/A'}
+
+SERVICE & GROWTH PARAMETERS
+---------------------------
+Service Needed: ${audit.service}
+Monthly Ad Budget: ${audit.budget || 'N/A'}
+Timeline: ${audit.timeline}
+Where they sell (Market): ${audit.market}
+
+PRIMARY GOAL / OBJECTIVE
+------------------------
+${audit.goal || 'No specific notes provided'}
+
+SUBMISSION DETAILS
+------------------
+ID: ${audit.id}
+Time: ${new Date(audit.createdAt).toLocaleString()}
+IP: ${audit.ip || 'N/A'}
+`;
+
+  const htmlContent = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 28px; background: #F5F5F2; color: #0A0A0A; border-radius: 16px;">
+      <div style="border-bottom: 2px solid #0A0A0A; padding-bottom: 16px; margin-bottom: 24px;">
+        <div style="font-size: 26px; font-weight: 900; letter-spacing: -0.02em;">∞ J38 CORPORATION</div>
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #0C4137; margin-top: 4px;">Free Growth Audit Request</div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 22px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #55575A;">Prospect Contact Info</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; width: 140px; font-weight: 600;">Name:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #0A0A0A;">${audit.name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; font-weight: 600;">Work Email:</td>
+            <td style="padding: 6px 0; font-weight: 700;"><a href="mailto:${audit.email}" style="color: #0C4137; text-decoration: none;">${audit.email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; font-weight: 600;">Website to Review:</td>
+            <td style="padding: 6px 0; font-weight: 700;">
+              ${audit.website ? `<a href="${audit.website.startsWith('http') ? audit.website : 'https://' + audit.website}" target="_blank" style="color: #0C4137; text-decoration: underline;">${audit.website}</a>` : 'Not provided'}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; font-weight: 600;">Phone / WhatsApp:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${audit.phone || 'Not provided'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 22px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <h3 style="margin: 0 0 14px 0; font-size: 14px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #55575A;">Growth Requirements</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; width: 140px; font-weight: 600;">Service Needed:</td>
+            <td style="padding: 6px 0; font-weight: 800; color: #0A0A0A;">${audit.service}</td>
+          </tr>
+          ${audit.budget ? `
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; font-weight: 600;">Monthly Ad Budget:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #0C4137;">${audit.budget}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; font-weight: 600;">Timeline:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${audit.timeline}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #55575A; font-weight: 600;">Target Market:</td>
+            <td style="padding: 6px 0; font-weight: 600;">${audit.market}</td>
+          </tr>
+        </table>
+      </div>
+
+      ${audit.goal ? `
+      <div style="background: #FFFFFF; border: 1px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 22px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #55575A;">Target Objective / Goal</h3>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #1A1A1A; white-space: pre-wrap; background: #FAFAF7; padding: 14px; border-radius: 8px; border-left: 4px solid #06D6A0;">${audit.goal}</p>
+      </div>` : ''}
+
+      <div style="text-align: center; font-size: 12px; color: #777777; margin-top: 24px;">
+        Received on ${new Date(audit.createdAt).toLocaleString()} • J38 Corporation Lead Engine
+      </div>
+    </div>
+  `;
+
+  // 1. SMTP Transporter (if configured)
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpPort = Number(process.env.SMTP_PORT) || 587;
+
+  if (smtpHost && smtpUser && smtpPass) {
     try {
-      const webhookPayload = {
-        username: 'J38 Growth Engine',
-        content: `🚨 **New Free Growth Audit Request Received!**\n` +
-          `**Prospect:** ${audit.name} (${audit.company || 'Individual'})\n` +
-          `**Email:** ${audit.email} | **Phone:** ${audit.phone || 'N/A'}\n` +
-          `**Service Needed:** ${audit.service}\n` +
-          `**Monthly Budget:** ${audit.budget} | **Timeline:** ${audit.timeline}\n` +
-          `**Target Market:** ${audit.market}\n` +
-          `**Primary Goal:** ${audit.goal}\n` +
-          `**Time:** ${new Date(audit.createdAt).toLocaleString()}`
-      };
-
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(webhookPayload)
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass }
       });
-      console.log('[Notification] Webhook dispatched successfully');
-    } catch (err) {
-      console.warn('[Notification] Webhook dispatch failed (non-critical):', err);
+
+      await transporter.sendMail({
+        from: `"J38 Growth Engine" <${smtpUser}>`,
+        to: RECIPIENT_EMAIL,
+        replyTo: audit.email,
+        subject,
+        text: textContent,
+        html: htmlContent
+      });
+      console.log('[Notification] SMTP email sent successfully to ' + RECIPIENT_EMAIL);
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[Notification] SMTP dispatch failed, trying next methods:', err.message);
     }
   }
 
-  // 2. Email Dispatch (Resend / SendGrid / SMTP / Console fallback)
+  // 2. Resend API (if configured)
   const resendApiKey = process.env.RESEND_API_KEY;
   if (resendApiKey) {
     try {
-      await fetch('https://api.resend.com/emails', {
+      const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${resendApiKey}`,
@@ -44,44 +143,68 @@ export async function sendAuditNotification(audit: GrowthAudit): Promise<{ succe
         },
         body: JSON.stringify({
           from: 'J38 Corporation <growth@j38.co>',
-          to: [ADMIN_NOTIFICATION_EMAIL],
-          subject: `Growth Audit Request: ${audit.company || audit.name} [${audit.service}]`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0A0A0A; background: #FAFAF7; border-radius: 12px; border: 1px solid #E5E7EB;">
-              <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #0A0A0A;">New Growth Audit Request</h2>
-              <p style="font-size: 14px; color: #55575A; margin-top: 0;">Submitted via J38 Corporation Interactive Growth Engine</p>
-              
-              <div style="background: #FFFFFF; padding: 20px; border-radius: 8px; border: 1px solid #E5E7EB; margin: 20px 0;">
-                <h3 style="font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #0C4137; margin-top: 0;">Contact Details</h3>
-                <p style="margin: 6px 0;"><strong>Name:</strong> ${audit.name}</p>
-                <p style="margin: 6px 0;"><strong>Company:</strong> ${audit.company || 'N/A'}</p>
-                <p style="margin: 6px 0;"><strong>Email:</strong> <a href="mailto:${audit.email}">${audit.email}</a></p>
-                <p style="margin: 6px 0;"><strong>Phone / WhatsApp:</strong> ${audit.phone || 'N/A'}</p>
-              </div>
-
-              <div style="background: #FFFFFF; padding: 20px; border-radius: 8px; border: 1px solid #E5E7EB; margin: 20px 0;">
-                <h3 style="font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #0C4137; margin-top: 0;">Project Parameters</h3>
-                <p style="margin: 6px 0;"><strong>Service Needed:</strong> ${audit.service}</p>
-                <p style="margin: 6px 0;"><strong>Monthly Ad Budget:</strong> ${audit.budget}</p>
-                <p style="margin: 6px 0;"><strong>Timeline:</strong> ${audit.timeline}</p>
-                <p style="margin: 6px 0;"><strong>Target Market:</strong> ${audit.market}</p>
-                <p style="margin: 6px 0;"><strong>Primary Goal:</strong></p>
-                <blockquote style="background: #F9FAFB; padding: 12px; border-left: 4px solid #06D6A0; margin: 8px 0; font-style: italic;">
-                  ${audit.goal}
-                </blockquote>
-              </div>
-
-              <p style="font-size: 12px; color: #888888; text-align: center; margin-top: 30px;">
-                © J38 Corporation • Built for What's Next
-              </p>
-            </div>
-          `
+          to: [RECIPIENT_EMAIL],
+          reply_to: audit.email,
+          subject,
+          text: textContent,
+          html: htmlContent
         })
       });
-      console.log('[Notification] Resend email dispatched successfully');
-    } catch (err) {
-      console.warn('[Notification] Email API dispatch failed:', err);
+      if (res.ok) {
+        console.log('[Notification] Resend API email delivered successfully to ' + RECIPIENT_EMAIL);
+        return { success: true };
+      }
+    } catch (err: any) {
+      console.warn('[Notification] Resend API dispatch error:', err.message);
     }
+  }
+
+  // 3. Webhook (Discord / Slack / Telegram / Zapier) if configured
+  const webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+  if (webhookUrl) {
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `🚨 **New J38 Growth Audit Request!**\n**Name:** ${audit.name}\n**Email:** ${audit.email}\n**Website:** ${audit.website || 'N/A'}\n**Service:** ${audit.service}\n**Budget:** ${audit.budget || 'N/A'}\n**Market:** ${audit.market}\n**Goal:** ${audit.goal || 'N/A'}`
+        })
+      });
+      console.log('[Notification] Webhook dispatched successfully');
+    } catch (err) {
+      console.warn('[Notification] Webhook dispatch error:', err);
+    }
+  }
+
+  // 4. Formsubmit fallback relay: sends email directly to raselrehman222@gmail.com without needing local SMTP keys
+  try {
+    const relayRes = await fetch(`https://formsubmit.co/ajax/${RECIPIENT_EMAIL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        _subject: subject,
+        _template: 'table',
+        'Name': audit.name,
+        'Work Email': audit.email,
+        'Website': audit.website || 'N/A',
+        'Phone': audit.phone || 'N/A',
+        'Service': audit.service,
+        'Monthly Budget': audit.budget || 'N/A',
+        'Timeline': audit.timeline,
+        'Target Market': audit.market,
+        'Goal / Objective': audit.goal || 'N/A',
+        'Submitted At': new Date(audit.createdAt).toLocaleString()
+      })
+    });
+    if (relayRes.ok) {
+      console.log('[Notification] Formsubmit direct email dispatch succeeded to ' + RECIPIENT_EMAIL);
+      return { success: true };
+    }
+  } catch (err) {
+    console.warn('[Notification] Email relay attempt logged:', err);
   }
 
   return { success: true };

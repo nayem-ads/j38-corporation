@@ -34,14 +34,15 @@ export type AuditStatus =
 export interface GrowthAudit {
   id: string;
   name: string;
-  company: string;
+  company?: string;
   email: string;
-  phone: string;
+  website?: string;
+  phone?: string;
   service: string;
-  budget: string;
+  budget?: string;
   timeline: string;
   market: string;
-  goal: string;
+  goal?: string;
   status: AuditStatus;
   createdAt: string;
   updatedAt: string;

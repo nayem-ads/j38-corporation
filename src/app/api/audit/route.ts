@@ -9,32 +9,55 @@ export async function POST(req: NextRequest) {
       name,
       company = '',
       email,
+      website = '',
       phone = '',
       service,
-      budget,
+      budget = '',
       timeline,
       market,
-      goal,
+      goal = '',
     } = body;
 
-    // Strict validation
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    // Strict validation matching form requirements
+    if (!name || typeof name !== 'string' || name.trim().length < 1) {
       return NextResponse.json(
-        { error: 'Please provide a valid name.' },
+        { error: 'Please enter your name.' },
         { status: 400 }
       );
     }
 
-    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
       return NextResponse.json(
-        { error: 'Please provide a valid email address.' },
+        { error: 'Enter a valid email address (e.g. you@company.com).' },
         { status: 400 }
       );
     }
 
-    if (!service || !budget || !timeline || !market || !goal) {
+    const cleanSite = (website || '').trim().replace(/^https?:\/\//i, '');
+    if (!cleanSite || !/^[^\s.]+\.[^\s.]{2,}/.test(cleanSite)) {
       return NextResponse.json(
-        { error: 'Please complete all required fields for the growth audit.' },
+        { error: 'Enter the website we should review (e.g. yourcompany.com).' },
+        { status: 400 }
+      );
+    }
+
+    if (!service) {
+      return NextResponse.json(
+        { error: 'Please pick the service you need.' },
+        { status: 400 }
+      );
+    }
+
+    if (!timeline) {
+      return NextResponse.json(
+        { error: 'Please select when you want to start.' },
+        { status: 400 }
+      );
+    }
+
+    if (!market) {
+      return NextResponse.json(
+        { error: 'Please pick the market you sell in.' },
         { status: 400 }
       );
     }
@@ -42,14 +65,15 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Persist into database
+    // Persist in persistent database
     const newAudit = await createAudit({
       name: name.trim(),
-      company: company.trim(),
+      company: company ? company.trim() : cleanSite,
       email: email.trim().toLowerCase(),
+      website: website ? website.trim() : cleanSite,
       phone: phone.trim(),
       service: service.trim(),
-      budget: budget.trim(),
+      budget: budget ? budget.trim() : undefined,
       timeline: timeline.trim(),
       market: market.trim(),
       goal: goal.trim(),
@@ -57,23 +81,23 @@ export async function POST(req: NextRequest) {
       userAgent,
     });
 
-    // Fire notifications in background (non-blocking)
-    sendAuditNotification(newAudit).catch((err) => {
-      console.error('[API /api/audit] Error sending notification:', err);
+    // Fire email notifications directly to raselrehman222@gmail.com
+    await sendAuditNotification(newAudit).catch((err) => {
+      console.error('[API /api/audit] Notification dispatch warning:', err);
     });
 
     return NextResponse.json(
       {
         success: true,
         id: newAudit.id,
-        message: 'Your free growth audit request has been successfully submitted. We will review your materials and respond within one business day.',
+        message: 'Your growth audit request has been successfully submitted.',
       },
       { status: 201 }
     );
   } catch (error: any) {
     console.error('[API /api/audit] Error processing audit request:', error);
     return NextResponse.json(
-      { error: 'Internal server error. Please try again or reach out to us directly.' },
+      { error: "That didn't go through. Please check your connection and try again." },
       { status: 500 }
     );
   }

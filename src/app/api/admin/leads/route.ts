@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
       filtered = filtered.filter(
         (a) =>
           a.name.toLowerCase().includes(search) ||
-          a.company.toLowerCase().includes(search) ||
+          (a.company || '').toLowerCase().includes(search) ||
+          (a.website || '').toLowerCase().includes(search) ||
           a.email.toLowerCase().includes(search) ||
           a.service.toLowerCase().includes(search)
       );

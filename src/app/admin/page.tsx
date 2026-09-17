@@ -152,6 +152,7 @@ export default function AdminPage() {
       'Name',
       'Company',
       'Email',
+      'Website',
       'Phone',
       'Service',
       'Budget',
@@ -167,12 +168,13 @@ export default function AdminPage() {
       `"${a.name.replace(/"/g, '""')}"`,
       `"${(a.company || '').replace(/"/g, '""')}"`,
       a.email,
+      `"${(a.website || '').replace(/"/g, '""')}"`,
       `"${(a.phone || '').replace(/"/g, '""')}"`,
       `"${a.service}"`,
-      `"${a.budget}"`,
+      `"${a.budget || 'N/A'}"`,
       `"${a.timeline}"`,
       `"${a.market}"`,
-      `"${a.goal.replace(/"/g, '""')}"`,
+      `"${(a.goal || '').replace(/"/g, '""')}"`,
       a.status,
       a.createdAt,
       `"${(a.notes || '').replace(/"/g, '""')}"`,
@@ -200,7 +202,8 @@ export default function AdminPage() {
     const matchesSearch =
       !searchQuery ||
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.website || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.market.toLowerCase().includes(searchQuery.toLowerCase());
@@ -440,7 +443,7 @@ export default function AdminPage() {
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-[#0A0A0A]">{a.name}</div>
                         <div className="text-[#55575A] text-[11px]">
-                          {a.company ? `${a.company} • ` : ''}
+                          {a.website ? `${a.website} • ` : a.company ? `${a.company} • ` : ''}
                           {a.email}
                         </div>
                       </td>
@@ -530,6 +533,22 @@ export default function AdminPage() {
                 >
                   {selectedAudit.email}
                 </a>
+              </div>
+
+              <div className="bg-[#FAFAF7] p-3.5 rounded-xl border border-black/5 flex flex-col gap-1">
+                <span className="font-bold uppercase tracking-wider text-[#55575A]">Website</span>
+                {selectedAudit.website ? (
+                  <a
+                    href={selectedAudit.website.startsWith('http') ? selectedAudit.website : `https://${selectedAudit.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[#0C4137] hover:underline"
+                  >
+                    {selectedAudit.website} ↗
+                  </a>
+                ) : (
+                  <span className="font-medium text-[#55575A]">Not provided</span>
+                )}
               </div>
 
               <div className="bg-[#FAFAF7] p-3.5 rounded-xl border border-black/5 flex flex-col gap-1">
