@@ -126,8 +126,9 @@ IP: ${audit.ip || 'N/A'}
       });
       console.log('[Notification] SMTP email sent successfully to ' + RECIPIENT_EMAIL);
       return { success: true };
-    } catch (err: any) {
-      console.warn('[Notification] SMTP dispatch failed, trying next methods:', err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[Notification] SMTP dispatch failed, trying next methods:', msg);
     }
   }
 
@@ -154,8 +155,9 @@ IP: ${audit.ip || 'N/A'}
         console.log('[Notification] Resend API email delivered successfully to ' + RECIPIENT_EMAIL);
         return { success: true };
       }
-    } catch (err: any) {
-      console.warn('[Notification] Resend API dispatch error:', err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[Notification] Resend API dispatch error:', msg);
     }
   }
 
@@ -209,3 +211,92 @@ IP: ${audit.ip || 'N/A'}
 
   return { success: true };
 }
+
+export async function sendProspectConfirmation(audit: GrowthAudit): Promise<void> {
+  const subject = `Your Growth Audit Request — J38 Corporation`;
+  const textContent = `Hi ${audit.name},
+
+Thank you for requesting a growth audit from J38 Corporation.
+
+We've received your details for ${audit.website || 'your business'}. Our growth strategists are reviewing your ads, tracking, and funnel.
+
+Expect our comprehensive review within 1 business day.
+
+Best regards,
+The J38 Corporation Team
+https://j38.co
+`;
+
+  const htmlContent = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 28px; background: #F5F5F2; color: #0A0A0A; border-radius: 14px;">
+      <div style="border-bottom: 2px solid #0A0A0A; padding-bottom: 14px; margin-bottom: 20px;">
+        <div style="font-size: 24px; font-weight: 900; letter-spacing: -0.02em;">∞ J38 CORPORATION</div>
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #0C4137; margin-top: 4px;">Audit Request Confirmed</div>
+      </div>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hi <strong>${audit.name}</strong>,</p>
+      <p style="font-size: 15px; line-height: 1.6; color: #3A3A3A; margin-bottom: 20px;">
+        Thank you for requesting a growth audit. We've received your submission for <strong>${audit.website || audit.company || 'your business'}</strong>.
+      </p>
+      <div style="background: #FFFFFF; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #55575A;">What happens next?</h4>
+        <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #1A1A1A;">
+          <li>Our growth team inspects your current acquisition channels and landing pages.</li>
+          <li>We diagnose leakage in ad spend, conversion bottlenecks, and tracking setups.</li>
+          <li>You'll receive an actionable breakdown within <strong>1 business day</strong>.</li>
+        </ol>
+      </div>
+      <p style="font-size: 13px; color: #777777; margin-top: 24px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 16px;">
+        Need to update your request? Reply directly to this email or reach us at <a href="mailto:raselrehman222@gmail.com" style="color: #0C4137; font-weight: 600;">raselrehman222@gmail.com</a>.
+      </p>
+    </div>
+  `;
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpPort = Number(process.env.SMTP_PORT) || 587;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass }
+      });
+      await transporter.sendMail({
+        from: `"J38 Corporation" <${smtpUser}>`,
+        to: audit.email,
+        subject,
+        text: textContent,
+        html: htmlContent
+      });
+      return;
+    } catch (err: unknown) {
+      console.warn('[Confirmation] SMTP send error:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'J38 Corporation <growth@j38.co>',
+          to: [audit.email],
+          subject,
+          text: textContent,
+          html: htmlContent
+        })
+      });
+    } catch (err: unknown) {
+      console.warn('[Confirmation] Resend API send error:', err instanceof Error ? err.message : String(err));
+    }
+  }
+}
+

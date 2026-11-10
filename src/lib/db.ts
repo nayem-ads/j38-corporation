@@ -73,18 +73,40 @@ const SEED_AUDITS: GrowthAudit[] = [
 ];
 
 function getDbPath(): string {
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    return path.join('/tmp', 'j38_audits.json');
-  }
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
+  // 1. Explicit environment variable for storage directory
+  if (process.env.DATA_DIR) {
     try {
-      fs.mkdirSync(dataDir, { recursive: true });
-    } catch {
-      return path.join('/tmp', 'j38_audits.json');
+      if (!fs.existsSync(process.env.DATA_DIR)) {
+        fs.mkdirSync(process.env.DATA_DIR, { recursive: true });
+      }
+      return path.join(process.env.DATA_DIR, 'audits.json');
+    } catch (err) {
+      console.warn('[db] Failed to initialize DATA_DIR, trying default paths:', err);
     }
   }
-  return path.join(dataDir, 'audits.json');
+
+  // 2. Candidate paths in order of preference (Railway volume mount, local data folder, tmp fallback)
+  const candidateDirs = [
+    '/data', // Railway volume mount convention
+    path.join(process.cwd(), 'data'),
+    path.join('/tmp', 'j38_audits_store'),
+  ];
+
+  for (const dir of candidateDirs) {
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const testFile = path.join(dir, '.write_test');
+      fs.writeFileSync(testFile, 'ok', 'utf-8');
+      fs.unlinkSync(testFile);
+      return path.join(dir, 'audits.json');
+    } catch {
+      continue;
+    }
+  }
+
+  return path.join('/tmp', 'j38_audits.json');
 }
 
 function readData(): GrowthAudit[] {

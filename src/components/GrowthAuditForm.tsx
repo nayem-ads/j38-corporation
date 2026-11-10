@@ -111,7 +111,11 @@ export default function GrowthAuditForm() {
 
   const track = () => {
     try {
-      const win = window as any;
+      const win = window as unknown as {
+        fbq?: (action: string, event: string, params?: Record<string, unknown>) => void;
+        gtag?: (action: string, event: string, params?: Record<string, unknown>) => void;
+        dataLayer?: Array<Record<string, unknown>>;
+      };
       if (win.fbq) win.fbq('track', 'Lead', { content_name: 'Free growth audit' });
       if (win.gtag) win.gtag('event', 'generate_lead', { event_category: 'audit' });
       if (win.dataLayer) {
@@ -152,9 +156,10 @@ export default function GrowthAuditForm() {
       track();
       setSending(false);
       setDone(true);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setSending(false);
-      setError(e.message || "That didn't go through. Please check your connection and try again.");
+      const msg = e instanceof Error ? e.message : "That didn't go through. Please check your connection and try again.";
+      setError(msg);
     }
   };
 

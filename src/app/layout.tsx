@@ -1,8 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://j38-corporation-production-fa08.up.railway.app';
+
 export const metadata: Metadata = {
-  title: "J38 Corporation — Built for What's Next",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "J38 Corporation — Built for What's Next",
+    template: "%s | J38 Corporation",
+  },
   description:
     'We combine strategy, creativity, technology and intelligent systems to build businesses designed for growth. Digital Marketing • AI • Automation • Branding • Web Solutions.',
   keywords: [
@@ -13,14 +19,30 @@ export const metadata: Metadata = {
     'Web Solutions',
     'J38 Corporation',
     'Growth Agency',
-    'Audit',
+    'Free Growth Audit',
   ],
   authors: [{ name: 'J38 Corporation' }],
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: "J38 Corporation — Built for What's Next",
     description:
       'We combine strategy, creativity, technology and intelligent systems to build businesses designed for growth.',
+    url: siteUrl,
+    siteName: 'J38 Corporation',
+    locale: 'en_US',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "J38 Corporation — Built for What's Next",
+    description:
+      'We combine strategy, creativity, technology and intelligent systems to build businesses designed for growth.',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/logo-black.png',
   },
 };
 

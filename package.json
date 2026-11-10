@@ -1,12 +1,12 @@
 {
-  "name": "mind-crm",
+  "name": "j38-corporation",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
+    "dev": "next dev",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src",
     "type-check": "tsc --noEmit",
     "analyze": "ANALYZE=true next build"
   },

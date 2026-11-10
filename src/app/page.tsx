@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import Image from 'next/image';
 import GrowthAuditForm from '@/components/GrowthAuditForm';
 
 const ThreeCanvas = dynamic(() => import('@/components/ThreeCanvas'), {
@@ -43,11 +44,12 @@ export default function HomePage() {
         >
           <div className="flex items-center justify-between gap-4 py-3.5 px-4 sm:px-10 lg:px-14">
             <a href="#hero" aria-label="J38 Corporation home" className="flex items-center">
-              <img
+              <Image
                 src="/logo-black.png"
                 alt="J38 Corporation"
                 width={1541}
                 height={178}
+                priority
                 className="h-5 sm:h-6 w-auto block object-contain"
               />
             </a>
@@ -408,12 +410,11 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="border-t border-black/10 py-10 sm:py-16 px-4 sm:px-10 lg:px-14 pb-28 sm:pb-32 flex flex-wrap items-end justify-between gap-6 bg-[#F5F5F2]">
           <div className="flex flex-col gap-2.5">
-            <img
+            <Image
               src="/logo-black.png"
               alt="J38 Corporation"
               width={1541}
               height={178}
-              loading="lazy"
               className="h-5 sm:h-6 w-auto block object-contain"
             />
             <div className="text-base text-[#3A3A3A]">Built for What&apos;s Next.</div>
@@ -429,6 +430,12 @@ export default function HomePage() {
             <a href="#j38-audit" className="hover:text-[#0C4137] transition-colors">
               Free audit
             </a>
+            <Link href="/privacy" className="hover:text-[#0C4137] transition-colors">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-[#0C4137] transition-colors">
+              Terms
+            </Link>
             <Link href="/admin" className="text-xs uppercase tracking-wider text-[#55575A] hover:text-black">
               Admin
             </Link>

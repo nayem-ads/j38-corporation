@@ -72,7 +72,7 @@ export default function AdminPage() {
         setIsAuthenticated(true);
         localStorage.setItem('j38_admin_authenticated', 'true');
       } else {
-        setAuthError('Incorrect password. Try "mind@123" or check your ADMIN_PASSWORD setting.');
+        setAuthError('Incorrect password. Please verify your credentials and try again.');
       }
     } catch {
       setAuthError('Authentication server error. Please try again.');

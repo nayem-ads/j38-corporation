@@ -1,9 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAudit } from '@/lib/db';
-import { sendAuditNotification } from '@/lib/notifications';
+import { sendAuditNotification, sendProspectConfirmation } from '@/lib/notifications';
+
+// In-memory rate limiting map: ip -> array of timestamps
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_REQUESTS_PER_WINDOW = 5;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(ip) || [];
+  const validTimestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  
+  if (validTimestamps.length >= MAX_REQUESTS_PER_WINDOW) {
+    rateLimitMap.set(ip, validTimestamps);
+    return true;
+  }
+
+  validTimestamps.push(now);
+  rateLimitMap.set(ip, validTimestamps);
+  return false;
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown';
+
+    if (ip !== 'unknown' && isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: 'Too many audit requests submitted from this network. Please wait a few minutes and try again.' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const {
       name,
@@ -62,10 +91,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Persist in persistent database
+    // Persist in database
     const newAudit = await createAudit({
       name: name.trim(),
       company: company ? company.trim() : cleanSite,
@@ -81,8 +109,11 @@ export async function POST(req: NextRequest) {
       userAgent,
     });
 
-    // Fire email notifications directly to raselrehman222@gmail.com
-    await sendAuditNotification(newAudit).catch((err) => {
+    // Fire email notification to admin & prospect confirmation in background
+    Promise.allSettled([
+      sendAuditNotification(newAudit),
+      sendProspectConfirmation(newAudit),
+    ]).catch((err) => {
       console.error('[API /api/audit] Notification dispatch warning:', err);
     });
 
@@ -94,7 +125,7 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/audit] Error processing audit request:', error);
     return NextResponse.json(
       { error: "That didn't go through. Please check your connection and try again." },
@@ -102,3 +133,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

@@ -3,6 +3,19 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+const A = 3.5;
+const point = (t: number) =>
+  new THREE.Vector3(A * Math.cos(t), A * 0.98 * Math.sin(t) * Math.cos(t), 0);
+
+class LemniscateCurve extends THREE.Curve<THREE.Vector3> {
+  constructor() {
+    super();
+  }
+  getPoint(u: number, target = new THREE.Vector3()) {
+    return target.copy(point(u * Math.PI * 2));
+  }
+}
+
 export default function ThreeCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -130,22 +143,9 @@ export default function ThreeCanvas() {
     scene.add(new THREE.AmbientLight(0xffffff, 0.75));
 
     /* Infinity Sculpture Lemniscate */
-    const A = 3.5;
-    const point = (t: number) =>
-      new THREE.Vector3(A * Math.cos(t), A * 0.98 * Math.sin(t) * Math.cos(t), 0);
-
-    class Lemniscate extends THREE.Curve<THREE.Vector3> {
-      constructor() {
-        super();
-      }
-      getPoint(u: number, target = new THREE.Vector3()) {
-        return target.copy(point(u * Math.PI * 2));
-      }
-    }
-
     const infinity = new THREE.Group();
     const core = new THREE.Mesh(
-      new THREE.TubeGeometry(new Lemniscate(), 720, 0.32, 48, true),
+      new THREE.TubeGeometry(new LemniscateCurve(), 720, 0.32, 48, true),
       new THREE.MeshPhysicalMaterial({
         color: 0x121212,
         metalness: 1,
@@ -391,7 +391,8 @@ export default function ThreeCanvas() {
         g.scale.setScalar(0.3 + pop * 0.7);
         g.rotation.y = t * 0.2 + i;
         g.rotation.x = Math.sin(t * 0.22 + i) * 0.14;
-        g.children.forEach((c: any, ci) => {
+        g.children.forEach((child, ci) => {
+          const c = child as THREE.Mesh;
           if (c.geometry && c.geometry.type === 'IcosahedronGeometry') {
             c.rotation.y = t * 0.3 * (ci + 1);
           }
@@ -403,7 +404,7 @@ export default function ThreeCanvas() {
     }
 
     function updateNumbers() {
-      document.querySelectorAll('[data-znum]').forEach((n: any) => {
+      document.querySelectorAll<HTMLElement>('[data-znum]').forEach((n) => {
         const r = n.getBoundingClientRect();
         if (r.bottom < -200 || r.top > window.innerHeight + 200) return;
         const d = (r.top + r.height / 2 - window.innerHeight * 0.5) / window.innerHeight;
